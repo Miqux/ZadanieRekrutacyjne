@@ -26,7 +26,7 @@ namespace ZadanieRekrutacyjne.Controllers
             this.downloadFileService = downloadFileService;
         }
         [HttpGet]
-        public async Task<ActionResult<ResponseModel>> Get(string sku)
+        public ActionResult<ResponseModel> Get(string sku)
         {
             var product = productRepository.GetProduct(sku).Result;
             if (product is null)
