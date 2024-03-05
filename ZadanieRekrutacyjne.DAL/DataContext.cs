@@ -1,23 +1,25 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using System.Data;
 
 namespace ZadanieRekrutacyjne.DAL
 {
     public class DataContext
     {
-        static string databaseName = "rekrutacjaintegracja";
-        static string connectionString = "Server=localhost;Database=" + databaseName + ";Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
-        static string connectionStringMaster = "Server=localhost;Database=master;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+        private string connectionString;
 
-        public DataContext()
+        private readonly IConfiguration configuration;
+
+        public DataContext(IConfiguration configuration)
         {
-
+            this.configuration = configuration;
+            connectionString = configuration.GetConnectionString("connDB");
         }
 
         public IDbConnection CreateConnection()
         {
-            return new SqlConnection(connectionString);
+            return new SqlConnection(connectionString + "Database=rekrutacjaintegracja");
         }
 
         public async Task Init()
@@ -28,17 +30,19 @@ namespace ZadanieRekrutacyjne.DAL
 
         private async Task _initDatabase()
         {
-            using var connection = new SqlConnection(connectionStringMaster);
-            var sql = $"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '" + databaseName + "') CREATE DATABASE [" + databaseName + "];";
+            using var connection = new SqlConnection(connectionString + "Database=master;");
+            var sql = $"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'rekrutacjaintegracja') CREATE DATABASE [rekrutacjaintegracja];";
             await connection.ExecuteAsync(sql);
         }
 
         private async Task _initTables()
         {
             using var connection = CreateConnection();
-            await _initUsers();
+            await _initInventory();
+            await _initProducts();
+            await _initPrices();
 
-            async Task _initUsers()
+            async Task _initInventory()
             {
                 var sql = """
                 IF OBJECT_ID('Inventory', 'U') IS NULL
@@ -46,7 +50,42 @@ namespace ZadanieRekrutacyjne.DAL
                     Id INT NOT NULL PRIMARY KEY IDENTITY,
                     Sku NVARCHAR(MAX),
                     Unit NVARCHAR(MAX),
-                    Shipping datetime2(7)
+                    ShippingCost DECIMAL(25,5),
+                    Qty DECIMAL(25,8)
+                );
+                """;
+                await connection.ExecuteAsync(sql);
+            }
+
+            async Task _initProducts()
+            {
+                var sql = """
+                IF OBJECT_ID('Product', 'U') IS NULL
+                CREATE TABLE Product (
+                    Id INT NOT NULL PRIMARY KEY IDENTITY,
+                    Sku NVARCHAR(MAX),
+                    Name NVARCHAR(MAX),
+                    EAN NVARCHAR(MAX),
+                    ProducerName NVARCHAR(MAX),
+                    Category NVARCHAR(MAX),
+                    DefaultImage NVARCHAR(MAX),
+                    IsWire BIT,
+                    Available BIT,
+                    IsVendor BIT
+                );
+                """;
+                await connection.ExecuteAsync(sql);
+            }
+
+            async Task _initPrices()
+            {
+                var sql = """
+                IF OBJECT_ID('Price', 'U') IS NULL
+                CREATE TABLE Price (
+                    Id INT NOT NULL PRIMARY KEY IDENTITY,
+                    Sku NVARCHAR(MAX),
+                    VatRate DECIMAL(7,4),
+                    ValueNetAfterUnitDiscount DECIMAL(25,5)
                 );
                 """;
                 await connection.ExecuteAsync(sql);

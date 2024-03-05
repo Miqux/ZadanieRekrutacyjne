@@ -1,4 +1,6 @@
 using ZadanieRekrutacyjne.DAL;
+using ZadanieRekrutacyjne.DAL.Repository;
+using ZadanieRekrutacyjne.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +11,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<DataContext>();
+builder.Services.AddTransient<IInventoryRepository, InventoryRepository>();
+builder.Services.AddTransient<IProductRepository, ProductRepository>();
+builder.Services.AddTransient<IPriceRepository, PriceRepository>();
+builder.Services.AddTransient<IDownloadFileService, DownloadFileService>();
 
 var app = builder.Build();
 
