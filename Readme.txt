@@ -1,0 +1,1 @@
+przed uruchomieniem programu nale¿y podmieniæ connection string z pliku appsetings.json oraz opcjonalnie podaæ œcie¿kê do zapisu plików csv w kontrolerze 
